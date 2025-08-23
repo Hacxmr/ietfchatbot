@@ -37,6 +37,10 @@
   --sidebar-accent-foreground: oklch(1 0 0); /* #ffffff - white text on sidebar accent */
   --sidebar-border: oklch(0.85 0.01 258); /* #d1d5db - light gray sidebar border */
   --sidebar-ring: oklch(0.65 0.15 162 / 0.5); /* emerald-600 with 50% opacity for sidebar focus ring */
+  /* Added default font configuration for cleaner typography */
+  --font-sans: ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol",
+    "Noto Color Emoji";
+  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 }
 
 .dark {
@@ -119,5 +123,8 @@
   }
   body {
     @apply bg-background text-foreground;
+    /* Added standard font sizing and line height */
+    font-size: 16px;
+    line-height: 1.5;
   }
 }
