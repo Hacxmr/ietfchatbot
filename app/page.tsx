@@ -1,6 +1,8 @@
 "use client"
 
 import type React from "react"
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 
 import { useAuth } from "@/components/auth-context"
 import { ChatHistoryPanel } from "@/components/chat-history-panel"
@@ -390,50 +392,46 @@ function ChatInterface({ audience, onBack }: { audience: AudienceType; onBack: (
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <Button
-                variant={showRFCSearch ? "default" : "ghost"}
-                size="sm"
+              <button
                 onClick={() => {
+                  console.log("Simple RFC Search button clicked")
                   setShowRFCSearch(!showRFCSearch)
                   if (!showRFCSearch) closeAllPanels()
                   setShowWGDashboard(false)
                   setShowNotifications(false)
                 }}
-                className="transition-all duration-200 hover:scale-110"
+                className="px-3 py-2 text-sm bg-secondary text-secondary-foreground hover:bg-secondary/80 rounded transition-all duration-200 hover:scale-110 border border-border"
               >
                 <Library className="w-4 h-4" />
-              </Button>
-              <Button
-                variant={showWGDashboard ? "default" : "ghost"}
-                size="sm"
+              </button>
+              <button
                 onClick={() => {
+                  console.log("Working Group button clicked")
                   setShowWGDashboard(!showWGDashboard)
                   if (!showWGDashboard) closeAllPanels()
                   setShowRFCSearch(false)
                   setShowNotifications(false)
                 }}
-                className="transition-all duration-200 hover:scale-110"
+                className="px-3 py-2 text-sm bg-secondary text-secondary-foreground hover:bg-secondary/80 rounded transition-all duration-200 hover:scale-110 border border-border"
               >
                 <Network className="w-4 h-4" />
-              </Button>
-              <Button
-                variant={showNotifications ? "default" : "ghost"}
-                size="sm"
+              </button>
+              <button
                 onClick={() => {
+                  console.log("Notifications button clicked")
                   setShowNotifications(!showNotifications)
                   if (!showNotifications) closeAllPanels()
                   setShowRFCSearch(false)
                   setShowWGDashboard(false)
                 }}
-                className="transition-all duration-200 hover:scale-110 relative"
+                className="px-3 py-2 text-sm bg-secondary text-secondary-foreground hover:bg-secondary/80 rounded transition-all duration-200 hover:scale-110 border border-border relative"
               >
                 <Bell className="w-4 h-4" />
                 <div className="absolute -top-1 -right-1 w-2 h-2 bg-destructive rounded-full animate-pulse" />
-              </Button>
-              <Button 
-                variant={showSearch ? "default" : "ghost"} 
-                size="sm" 
+              </button>
+              <button
                 onClick={() => {
+                  console.log("Search button clicked")
                   setShowSearch(!showSearch)
                   if (!showSearch) closeAllPanels()
                   setShowRFCSearch(false)
@@ -441,14 +439,13 @@ function ChatInterface({ audience, onBack }: { audience: AudienceType; onBack: (
                   setShowNotifications(false)
                   setShowChatHistory(false)
                 }}
-                className="transition-all duration-200 hover:scale-110"
+                className="px-3 py-2 text-sm bg-secondary text-secondary-foreground hover:bg-secondary/80 rounded transition-all duration-200 hover:scale-110 border border-border"
               >
                 <Search className="w-4 h-4" />
-              </Button>
-              <Button 
-                variant={showChatHistory ? "default" : "ghost"} 
-                size="sm" 
+              </button>
+              <button
                 onClick={() => {
+                  console.log("Chat History button clicked")
                   setShowChatHistory(!showChatHistory)
                   if (!showChatHistory) closeAllPanels()
                   setShowRFCSearch(false)
@@ -456,10 +453,10 @@ function ChatInterface({ audience, onBack }: { audience: AudienceType; onBack: (
                   setShowNotifications(false)
                   setShowSearch(false)
                 }}
-                className="transition-all duration-200 hover:scale-110"
+                className="px-3 py-2 text-sm bg-secondary text-secondary-foreground hover:bg-secondary/80 rounded transition-all duration-200 hover:scale-110 border border-border"
               >
                 <Calendar className="w-4 h-4" />
-              </Button>
+              </button>
               <UserAuthButton />
               <ThemeToggle />
             </div>
@@ -660,7 +657,16 @@ function MessageBubble({ message, audience }: { message: Message; audience: Audi
           <div className="flex items-start gap-2">
             <User className="w-4 h-4 mt-0.5 flex-shrink-0" />
             <div className="flex-1">
-              <p className="whitespace-pre-wrap">{message.content}</p>
+              <div className="prose prose-sm max-w-none
+                           prose-headings:text-primary-foreground
+                           prose-p:text-primary-foreground prose-p:my-1
+                           prose-strong:text-primary-foreground prose-strong:font-semibold
+                           prose-a:text-primary-foreground prose-a:underline hover:prose-a:no-underline
+                           prose-ul:text-primary-foreground prose-li:text-primary-foreground">
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                  {message.content}
+                </ReactMarkdown>
+              </div>
               <div className="flex items-center justify-end gap-2 mt-2 text-xs opacity-70">
                 <Clock className="w-3 h-3" />
                 {formatTimestamp(message.timestamp)}
@@ -704,7 +710,17 @@ function MessageBubble({ message, audience }: { message: Message; audience: Audi
               </div>
             )}
 
-            <p className="whitespace-pre-wrap leading-relaxed">{message.content}</p>
+            <div className="prose prose-sm max-w-none leading-relaxed
+                         prose-headings:text-foreground prose-headings:font-semibold
+                         prose-p:text-foreground prose-p:my-2
+                         prose-strong:text-foreground prose-strong:font-semibold
+                         prose-a:text-primary prose-a:font-medium hover:prose-a:text-primary/80
+                         prose-ul:text-foreground prose-li:text-foreground
+                         prose-code:text-foreground prose-code:bg-muted prose-code:px-1 prose-code:rounded">
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                {message.content}
+              </ReactMarkdown>
+            </div>
 
             <div className="flex items-center justify-between mt-3 pt-2 border-t border-border/50">
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
