@@ -1,6 +1,7 @@
-import type React from "react"
-import type { Metadata } from "next"
+import { AuthProvider } from "@/components/auth-context"
 import { ThemeProvider } from "@/components/theme-provider"
+import type { Metadata } from "next"
+import type React from "react"
 import "./globals.css"
 
 export const metadata: Metadata = {
@@ -18,7 +19,9 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange={false}>
-          {children}
+          <AuthProvider>
+            {children}
+          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>

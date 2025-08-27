@@ -2,36 +2,41 @@
 
 import type React from "react"
 
-import { useState, useRef } from "react"
+import { useAuth } from "@/components/auth-context"
+import { ChatHistoryPanel } from "@/components/chat-history-panel"
+import { ClerkWrapper } from "@/components/clerk-provider"
+import { NotificationsSystem } from "@/components/notifications-system"
+import { RFCSearch } from "@/components/rfc-search"
+import { SearchPanel } from "@/components/search-panel"
+import { ThemeToggle } from "@/components/theme-toggle"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Textarea } from "@/components/ui/textarea"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { ThemeToggle } from "@/components/theme-toggle"
-import {
-  Users,
-  FileText,
-  BookOpen,
-  Search,
-  Bell,
-  Calendar,
-  Send,
-  Bot,
-  User,
-  Copy,
-  ThumbsUp,
-  ThumbsDown,
-  Clock,
-  Loader2,
-  Library,
-  Network,
-  Sparkles,
-  ArrowRight,
-} from "lucide-react"
-import { RFCSearch } from "@/components/rfc-search"
+import { Textarea } from "@/components/ui/textarea"
+import { UserAuthButton } from "@/components/user-auth-button"
 import { WorkingGroupDashboard } from "@/components/working-group-dashboard"
-import { NotificationsSystem } from "@/components/notifications-system"
+import {
+  ArrowRight,
+  Bell,
+  BookOpen,
+  Bot,
+  Calendar,
+  Clock,
+  Copy,
+  FileText,
+  Library,
+  Loader2,
+  Network,
+  Search,
+  Send,
+  Sparkles,
+  ThumbsDown,
+  ThumbsUp,
+  User,
+  Users,
+} from "lucide-react"
+import { useEffect, useRef, useState } from "react"
 
 type AudienceType = "policymaker" | "technical" | "newcomer" | null
 
@@ -67,6 +72,14 @@ const audienceConfig = {
 }
 
 export default function IETFChatbot() {
+  return (
+    <ClerkWrapper>
+      <IETFChatbotContent />
+    </ClerkWrapper>
+  )
+}
+
+function IETFChatbotContent() {
   const [selectedAudience, setSelectedAudience] = useState<AudienceType>(null)
 
   const audienceOptions = [
@@ -102,7 +115,8 @@ export default function IETFChatbot() {
   if (!selectedAudience) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 transition-colors duration-300">
-        <div className="absolute top-4 right-4 z-10">
+        <div className="absolute top-4 right-4 z-10 flex items-center gap-2">
+          <UserAuthButton />
           <ThemeToggle />
         </div>
 
@@ -113,7 +127,7 @@ export default function IETFChatbot() {
                 <Sparkles className="w-8 h-8 text-primary animate-pulse" />
                 <div className="absolute inset-0 w-8 h-8 text-primary/30 animate-ping" />
               </div>
-              <h1 className="text-4xl font-bold text-foreground bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
                 IETF AI Assistant
               </h1>
             </div>
@@ -198,8 +212,11 @@ function ChatInterface({ audience, onBack }: { audience: AudienceType; onBack: (
   const [showRFCSearch, setShowRFCSearch] = useState(false)
   const [showWGDashboard, setShowWGDashboard] = useState(false)
   const [showNotifications, setShowNotifications] = useState(false)
+  const [showSearch, setShowSearch] = useState(false)
+  const [showChatHistory, setShowChatHistory] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const { saveChatHistory, getCurrentChatId, setCurrentChatId } = useAuth()
 
   const handleSendMessage = async () => {
     if (!input.trim()) return
@@ -213,56 +230,83 @@ function ChatInterface({ audience, onBack }: { audience: AudienceType; onBack: (
     }
 
     setMessages((prev) => [...prev, userMessage])
+    const currentInput = input
     setInput("")
     setIsTyping(true)
 
     setTimeout(
-      () => {
-        const assistantMessage: Message = {
-          id: (Date.now() + 1).toString(),
-          role: "assistant",
-          content: generateAudienceResponse(input, audience!),
-          timestamp: new Date(),
-          type: getResponseType(input),
-          metadata: getResponseMetadata(input),
-        }
+      async () => {
+        try {
+          const responseContent = await generateAudienceResponse(currentInput, audience!)
+          
+          const assistantMessage: Message = {
+            id: (Date.now() + 1).toString(),
+            role: "assistant",
+            content: responseContent,
+            timestamp: new Date(),
+            type: getResponseType(currentInput),
+            metadata: getResponseMetadata(currentInput),
+          }
 
-        setMessages((prev) => [...prev, assistantMessage])
-        setIsTyping(false)
+          setMessages((prev) => [...prev, assistantMessage])
+        } catch (error) {
+          console.error('Error generating response:', error)
+          const errorMessage: Message = {
+            id: (Date.now() + 1).toString(),
+            role: "assistant",
+            content: "I apologize, but I'm experiencing technical difficulties. Please try again in a moment.",
+            timestamp: new Date(),
+            type: "text",
+          }
+          setMessages((prev) => [...prev, errorMessage])
+        } finally {
+          setIsTyping(false)
+        }
       },
       1500 + Math.random() * 1000,
     )
   }
 
-  const generateAudienceResponse = (query: string, audienceType: AudienceType): string => {
-    const lowerQuery = query.toLowerCase()
+  const generateAudienceResponse = async (query: string, audienceType: AudienceType): Promise<string> => {
+    try {
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          messages: [
+            {
+              role: 'user',
+              content: query
+            }
+          ],
+          audience: audienceType
+        }),
+      })
 
-    if (lowerQuery.includes("rfc") || lowerQuery.includes("standard")) {
-      if (audienceType === "policymaker") {
-        return "Here's a policy-focused summary: RFC 9110 modernizes HTTP semantics, impacting web privacy and data governance. Key policy implications include enhanced user consent mechanisms and improved data protection standards. This affects how organizations handle user data and comply with privacy regulations."
-      } else if (audienceType === "technical") {
-        return "RFC 9110 (HTTP Semantics) replaces RFC 2616 and introduces several technical changes:\n\n• Clarifies HTTP method semantics\n• Updates caching behavior\n• Defines new status codes\n• Improves security considerations\n\nStatus: Standards Track (Proposed Standard)\nObsoletes: RFC 2616, RFC 7230-7235"
-      } else {
-        return "Let me explain RFCs simply: RFC stands for 'Request for Comments' - these are the documents that define how the internet works! Think of them as instruction manuals for internet protocols. RFC 9110, for example, explains how web browsers and servers communicate. Would you like me to explain any specific part?"
+      if (!response.ok) {
+        throw new Error(`API request failed: ${response.status}`)
       }
-    }
 
-    if (lowerQuery.includes("working group") || lowerQuery.includes("wg")) {
-      if (audienceType === "policymaker") {
-        return "Working Groups are where IETF policy decisions are made. Currently active groups include Privacy Enhancements (PEARG) focusing on user privacy, and Security Area groups addressing cybersecurity standards. These groups directly influence internet governance and regulatory compliance."
-      } else if (audienceType === "technical") {
-        return "Active Working Groups by area:\n\n**Security Area:**\n• TLS (Transport Layer Security)\n• OAUTH (Web Authorization)\n• CFRG (Crypto Forum Research)\n\n**Internet Area:**\n• 6MAN (IPv6 Maintenance)\n• DNSOP (DNS Operations)\n\nEach WG has GitHub repos, mailing lists, and regular meetings. Would you like details on a specific group?"
-      } else {
-        return "Working Groups are like committees that focus on specific internet technologies! For example, the TLS Working Group makes sure your online shopping is secure, while the DNS Working Group ensures websites load correctly. Each group has experts who collaborate to create standards. Want to learn about a specific area?"
+      const data = await response.json()
+      
+      if (data.error) {
+        throw new Error(data.error)
       }
-    }
 
-    if (audienceType === "policymaker") {
-      return "I can help you understand IETF standards from a policy perspective. Try asking about specific RFCs, governance changes, or policy implications of technical standards."
-    } else if (audienceType === "technical") {
-      return "I'm here to provide detailed technical information about IETF standards. Ask me about specific RFCs, working group activities, or technical specifications."
-    } else {
-      return "I'm here to help you learn about IETF! Try asking about basic concepts, specific technologies, or how internet standards are created. What would you like to explore?"
+      return data.content || 'I apologize, but I couldn\'t generate a response at the moment. Please try again.'
+    } catch (error) {
+      console.error('Error generating response:', error)
+      
+      // Fallback to simple audience-based responses if API fails
+      if (audienceType === 'policymaker') {
+        return "I'm currently experiencing technical difficulties. As a brief overview for policymakers: The IETF develops critical internet standards through consensus-based processes that impact global digital policy and governance."
+      } else if (audienceType === 'technical') {
+        return "API temporarily unavailable. The IETF is the primary standards organization for internet protocols. Key processes include Internet-Drafts, Working Group reviews, and RFC publication through the standards track."
+      } else {
+        return "I'm having some technical issues right now. The IETF is the organization that creates the rules for how the internet works. Please try your question again in a moment!"
+      }
     }
   }
 
@@ -304,7 +348,25 @@ function ChatInterface({ audience, onBack }: { audience: AudienceType; onBack: (
     setShowRFCSearch(false)
     setShowWGDashboard(false)
     setShowNotifications(false)
+    setShowSearch(false)
+    setShowChatHistory(false)
   }
+
+  // Save chat history when messages change
+  useEffect(() => {
+    if (messages.length > 0 && audience) {
+      const chatMessages = messages.map(msg => ({
+        ...msg,
+        audience: audience
+      }))
+      saveChatHistory(chatMessages, audience)
+    }
+  }, [messages, audience, saveChatHistory])
+
+  // Auto-scroll to bottom when new messages arrive
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
+  }, [messages])
 
   return (
     <div className="min-h-screen bg-background flex flex-col transition-colors duration-300">
@@ -323,7 +385,7 @@ function ChatInterface({ audience, onBack }: { audience: AudienceType; onBack: (
               <div>
                 <h1 className="text-xl font-semibold">{audienceConfig[audience!].title}</h1>
                 <Badge className={`${audienceConfig[audience!].color} transition-all duration-200 hover:scale-105`}>
-                  {audience?.charAt(0).toUpperCase() + audience?.slice(1)}
+                  {audience ? audience.charAt(0).toUpperCase() + audience.slice(1) : ''}
                 </Badge>
               </div>
             </div>
@@ -368,12 +430,37 @@ function ChatInterface({ audience, onBack }: { audience: AudienceType; onBack: (
                 <Bell className="w-4 h-4" />
                 <div className="absolute -top-1 -right-1 w-2 h-2 bg-destructive rounded-full animate-pulse" />
               </Button>
-              <Button variant="ghost" size="sm" className="transition-all duration-200 hover:scale-110">
+              <Button 
+                variant={showSearch ? "default" : "ghost"} 
+                size="sm" 
+                onClick={() => {
+                  setShowSearch(!showSearch)
+                  if (!showSearch) closeAllPanels()
+                  setShowRFCSearch(false)
+                  setShowWGDashboard(false)
+                  setShowNotifications(false)
+                  setShowChatHistory(false)
+                }}
+                className="transition-all duration-200 hover:scale-110"
+              >
                 <Search className="w-4 h-4" />
               </Button>
-              <Button variant="ghost" size="sm" className="transition-all duration-200 hover:scale-110">
+              <Button 
+                variant={showChatHistory ? "default" : "ghost"} 
+                size="sm" 
+                onClick={() => {
+                  setShowChatHistory(!showChatHistory)
+                  if (!showChatHistory) closeAllPanels()
+                  setShowRFCSearch(false)
+                  setShowWGDashboard(false)
+                  setShowNotifications(false)
+                  setShowSearch(false)
+                }}
+                className="transition-all duration-200 hover:scale-110"
+              >
                 <Calendar className="w-4 h-4" />
               </Button>
+              <UserAuthButton />
               <ThemeToggle />
             </div>
           </div>
@@ -449,6 +536,29 @@ function ChatInterface({ audience, onBack }: { audience: AudienceType; onBack: (
             />
           </div>
         </div>
+      )}
+
+      {/* Search Panel */}
+      {showSearch && (
+        <SearchPanel
+          onClose={() => setShowSearch(false)}
+          onSearchSelect={(query) => {
+            setInput(query)
+            setShowSearch(false)
+          }}
+        />
+      )}
+
+      {/* Chat History Panel */}
+      {showChatHistory && (
+        <ChatHistoryPanel
+          onClose={() => setShowChatHistory(false)}
+          onChatSelect={(chatId) => {
+            // In a full implementation, you would load the selected chat
+            // For now, we'll just close the panel
+            setShowChatHistory(false)
+          }}
+        />
       )}
 
       {/* Chat Messages */}
