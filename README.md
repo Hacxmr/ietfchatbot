@@ -7,7 +7,7 @@ An intelligent chatbot designed to help users understand Internet Engineering Ta
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-blue?style=for-the-badge&logo=typescript)
 ![Tailwind](https://img.shields.io/badge/Tailwind-CSS-38B2AC?style=for-the-badge&logo=tailwind-css)
 
-## 🌟 Features
+## Features
 
 ### **Audience-Specific Responses**
 - **Policymakers**: High-level summaries, regulatory implications, governance aspects
@@ -33,13 +33,12 @@ An intelligent chatbot designed to help users understand Internet Engineering Ta
 - **Fallback System**: Robust error handling with offline responses
 - **Context Awareness**: Maintains conversation context and user preferences
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Prerequisites
 
 - **Node.js** 18+ and **pnpm**
 - **OpenAI API Key** or **OpenRouter API Key**
-- **Clerk Account** (for authentication)
 
 ### Installation
 
@@ -61,19 +60,9 @@ cp .env.example .env.local
 Create `.env.local` with the following variables:
 
 ```bash
-# Authentication (Clerk)
-NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=your_clerk_publishable_key
-CLERK_SECRET_KEY=your_clerk_secret_key
-
 # AI APIs (choose one or both)
 OPENAI_API_KEY=your_openai_api_key
 OPENROUTER_API_KEY=your_openrouter_api_key
-
-# Optional: Clerk redirect URLs
-NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in
-NEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up
-NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL=/
-NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL=/
 ```
 
 ### Initialize RFC Database
@@ -107,13 +96,13 @@ pnpm start
 
 Open [http://localhost:3000](http://localhost:3000) to access the chatbot.
 
-## 🏗️ Architecture
+## Architecture
 
 ### **Technology Stack**
 
 - **Frontend**: Next.js 15.2.4, React, TypeScript
 - **Styling**: Tailwind CSS, Radix UI components
-- **Authentication**: Clerk (OAuth, secure user management)
+- **Authentication**: Built-in session management
 - **AI/ML**: OpenAI GPT models, LangChain for RAG
 - **Vector Storage**: In-memory vector store with backup persistence
 - **Deployment**: Vercel-ready, Docker support
@@ -122,7 +111,7 @@ Open [http://localhost:3000](http://localhost:3000) to access the chatbot.
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                    IETF Chatbot RAG System                     │
+│                    IETF Chatbot RAG System                      │
 ├─────────────────────────────────────────────────────────────────┤
 │  User Query                                                     │
 │      ↓                                                          │
@@ -130,11 +119,11 @@ Open [http://localhost:3000](http://localhost:3000) to access the chatbot.
 │      ↓                                                          │
 │  Vector Search (similarity)                                     │
 │      ↓                                                          │
-│  Context Retrieval (top-k results)                             │
+│  Context Retrieval (top-k results)                              │
 │      ↓                                                          │
 │  Prompt Enhancement (audience-specific)                         │
 │      ↓                                                          │
-│  LLM Generation (with RFC context)                             │
+│  LLM Generation (with RFC context)                              │
 │      ↓                                                          │
 │  Response + Source Citations                                    │
 └─────────────────────────────────────────────────────────────────┘
@@ -151,7 +140,7 @@ ietfchatbot/
 │   └── page.tsx                 # Main chat interface
 ├── components/                   # React components
 │   ├── ui/                      # Radix UI components
-│   ├── auth-debug-info.tsx      # Authentication debugging
+│   ├── auth-context.tsx        # Authentication context
 │   ├── notifications-system.tsx # IETF notifications
 │   ├── rfc-search.tsx          # RFC search functionality
 │   ├── theme-provider.tsx       # Theme management
@@ -175,7 +164,7 @@ ietfchatbot/
 └── README.md                  # This file
 ```
 
-## 📚 RFC Knowledge Base
+## RFC Knowledge Base
 
 ### **Coverage Areas (150+ RFCs)**
 
@@ -223,7 +212,7 @@ ietfchatbot/
 | **Important** | 100 RFCs | Critical + common standards | 5-7 min |
 | **All** | 150 RFCs | Complete knowledge base | 12-15 min |
 
-## 🎯 Usage Examples
+## Usage Examples
 
 ### **For Policymakers**
 
@@ -243,7 +232,7 @@ ietfchatbot/
 
 **Response**: Simple explanation with analogies, basic concepts in bold, and step-by-step guidance to understand transport protocols.
 
-## 🛠️ Development
+## Development
 
 ### **Available Scripts**
 
@@ -282,12 +271,10 @@ curl -X POST http://localhost:3000/api/chat \
 |----------|----------|-------------|
 | `OPENAI_API_KEY` | Yes* | OpenAI API key for embeddings and chat |
 | `OPENROUTER_API_KEY` | Yes* | Alternative to OpenAI for chat completions |
-| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | Yes | Clerk authentication public key |
-| `CLERK_SECRET_KEY` | Yes | Clerk authentication secret key |
 
 *One of the AI API keys is required
 
-## 🔧 Configuration
+## Configuration
 
 ### **RAG System Settings**
 
@@ -321,7 +308,7 @@ const CHAT_CONFIG = {
 };
 ```
 
-## 📈 Performance
+## Performance
 
 ### **Initialization Benchmarks**
 
@@ -344,7 +331,7 @@ const CHAT_CONFIG = {
 - **Error Recovery**: Automatic retry with exponential backoff
 - **Memory Management**: Efficient document chunking and storage
 
-## 🤝 Contributing
+## Contributing
 
 We welcome contributions! Here's how to get started:
 
@@ -373,47 +360,46 @@ We welcome contributions! Here's how to get started:
 - Add JSDoc comments for new functions
 - Write descriptive commit messages
 
-## 📄 License
+## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
 - **IETF Community** for creating and maintaining internet standards
 - **LangChain** for RAG implementation framework
 - **OpenAI** for embeddings and language model APIs
-- **Clerk** for seamless authentication
 - **Vercel** for hosting and deployment platform
 
-## 📞 Support
+## Support
 
 - **Documentation**: See [README-RAG.md](README-RAG.md) for detailed RAG system documentation
 - **Issues**: Report bugs or request features via [GitHub Issues](https://github.com/Hacxmr/ietfchatbot/issues)
 - **Discussions**: Join conversations in [GitHub Discussions](https://github.com/Hacxmr/ietfchatbot/discussions)
 
-## 🎯 Roadmap
+## Roadmap
 
 ### **Current Version (v1.0)**
-- ✅ Comprehensive RFC database (150+ RFCs)
-- ✅ RAG-enhanced responses
-- ✅ Audience-specific prompting
-- ✅ Source citation system
-- ✅ Authentication and user management
+-  Comprehensive RFC database (150+ RFCs)
+-  RAG-enhanced responses
+-  Audience-specific prompting
+-  Source citation system
+-  Authentication and user management
 
 ### **Upcoming Features (v1.1)**
-- 🔄 Persistent vector database (ChromaDB/Pinecone)
-- 🔄 Real-time RFC monitoring and updates
-- 🔄 Advanced search and filtering
-- 🔄 Usage analytics and metrics
-- 🔄 API rate limiting and caching
+-  Persistent vector database (ChromaDB/Pinecone)
+-  Real-time RFC monitoring and updates
+-  Advanced search and filtering
+-  Usage analytics and metrics
+-  API rate limiting and caching
 
 ### **Future Enhancements (v2.0)**
-- 🔮 Multi-language support
-- 🔮 Voice interface integration
-- 🔮 Mobile application
-- 🔮 Integration with IETF tools and systems
-- 🔮 Collaborative features and team workspaces
+-  Multi-language support
+-  Voice interface integration
+-  Mobile application
+-  Integration with IETF tools and systems
+-  Collaborative features and team workspaces
 
 ---
 
-**Built with ❤️ for the IETF community and internet standards enthusiasts worldwide.**
+**Built with passion for the IETF community and internet standards enthusiasts worldwide.**

@@ -14,7 +14,6 @@
     "test-rag": "npx ts-node --esm scripts/test-rag.js"
   },
   "dependencies": {
-    "@clerk/nextjs": "^6.31.4",
     "@hookform/resolvers": "^3.10.0",
     "@langchain/community": "^0.3.55",
     "@langchain/openai": "^0.6.11",

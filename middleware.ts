@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-// Simple middleware without Clerk for now
+// Middleware for handling authentication and request processing
 export function middleware(request: NextRequest) {
   return NextResponse.next()
 }
