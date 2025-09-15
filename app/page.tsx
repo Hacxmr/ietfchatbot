@@ -12,19 +12,19 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Textarea } from "@/components/ui/textarea"
 import {
-  ArrowRight,
-  BookOpen,
-  Bot,
-  Clock,
-  Copy,
-  FileText,
-  Loader2,
-  Send,
-  Sparkles,
-  ThumbsDown,
-  ThumbsUp,
-  User,
-  Users
+    ArrowRight,
+    BookOpen,
+    Bot,
+    Clock,
+    Copy,
+    FileText,
+    Loader2,
+    Send,
+    Sparkles,
+    ThumbsDown,
+    ThumbsUp,
+    User,
+    Users
 } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 
@@ -498,7 +498,21 @@ function MessageBubble({ message, audience }: { message: Message; audience: Audi
                            prose-strong:text-primary-foreground prose-strong:font-semibold
                            prose-a:text-primary-foreground prose-a:underline hover:prose-a:no-underline
                            prose-ul:text-primary-foreground prose-li:text-primary-foreground">
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                <ReactMarkdown 
+                  remarkPlugins={[remarkGfm]}
+                  components={{
+                    a: ({ href, children, ...props }) => (
+                      <a 
+                        href={href} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        {...props}
+                      >
+                        {children}
+                      </a>
+                    )
+                  }}
+                >
                   {message.content}
                 </ReactMarkdown>
               </div>
@@ -552,7 +566,21 @@ function MessageBubble({ message, audience }: { message: Message; audience: Audi
                          prose-a:text-primary prose-a:font-medium hover:prose-a:text-primary/80
                          prose-ul:text-foreground prose-li:text-foreground
                          prose-code:text-foreground prose-code:bg-muted prose-code:px-1 prose-code:rounded">
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>
+              <ReactMarkdown 
+                remarkPlugins={[remarkGfm]}
+                components={{
+                  a: ({ href, children, ...props }) => (
+                    <a 
+                      href={href} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      {...props}
+                    >
+                      {children}
+                    </a>
+                  )
+                }}
+              >
                 {message.content}
               </ReactMarkdown>
             </div>
