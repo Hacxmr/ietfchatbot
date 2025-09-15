@@ -4,39 +4,27 @@ import type React from "react"
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 
-import { useAuth } from "@/components/auth-context"
-import { ChatHistoryPanel } from "@/components/chat-history-panel"
-import { ClerkWrapper } from "@/components/clerk-provider"
-import { NotificationsSystem } from "@/components/notifications-system"
-import { RFCSearch } from "@/components/rfc-search"
-import { SearchPanel } from "@/components/search-panel"
+// Removed unused component imports
 import { ThemeToggle } from "@/components/theme-toggle"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Textarea } from "@/components/ui/textarea"
-import { UserAuthButton } from "@/components/user-auth-button"
-import { WorkingGroupDashboard } from "@/components/working-group-dashboard"
 import {
   ArrowRight,
-  Bell,
   BookOpen,
   Bot,
-  Calendar,
   Clock,
   Copy,
   FileText,
-  Library,
   Loader2,
-  Network,
-  Search,
   Send,
   Sparkles,
   ThumbsDown,
   ThumbsUp,
   User,
-  Users,
+  Users
 } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 
@@ -53,6 +41,10 @@ interface Message {
     workingGroup?: string
     category?: string
   }
+  sources?: {
+    rfcNumber: string
+    title: string
+  }[]
 }
 
 const audienceConfig = {
@@ -74,11 +66,7 @@ const audienceConfig = {
 }
 
 export default function IETFChatbot() {
-  return (
-    <ClerkWrapper>
-      <IETFChatbotContent />
-    </ClerkWrapper>
-  )
+  return <IETFChatbotContent />
 }
 
 function IETFChatbotContent() {
@@ -118,7 +106,6 @@ function IETFChatbotContent() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 transition-colors duration-300">
         <div className="absolute top-4 right-4 z-10 flex items-center gap-2">
-          <UserAuthButton />
           <ThemeToggle />
         </div>
 
@@ -211,14 +198,8 @@ function ChatInterface({ audience, onBack }: { audience: AudienceType; onBack: (
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState("")
   const [isTyping, setIsTyping] = useState(false)
-  const [showRFCSearch, setShowRFCSearch] = useState(false)
-  const [showWGDashboard, setShowWGDashboard] = useState(false)
-  const [showNotifications, setShowNotifications] = useState(false)
-  const [showSearch, setShowSearch] = useState(false)
-  const [showChatHistory, setShowChatHistory] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
-  const { saveChatHistory, getCurrentChatId, setCurrentChatId } = useAuth()
 
   const handleSendMessage = async () => {
     if (!input.trim()) return
@@ -239,15 +220,16 @@ function ChatInterface({ audience, onBack }: { audience: AudienceType; onBack: (
     setTimeout(
       async () => {
         try {
-          const responseContent = await generateAudienceResponse(currentInput, audience!)
+          const response = await generateAudienceResponse(currentInput, audience!)
           
           const assistantMessage: Message = {
             id: (Date.now() + 1).toString(),
             role: "assistant",
-            content: responseContent,
+            content: response.content,
             timestamp: new Date(),
             type: getResponseType(currentInput),
             metadata: getResponseMetadata(currentInput),
+            sources: response.sources || [],
           }
 
           setMessages((prev) => [...prev, assistantMessage])
@@ -269,7 +251,7 @@ function ChatInterface({ audience, onBack }: { audience: AudienceType; onBack: (
     )
   }
 
-  const generateAudienceResponse = async (query: string, audienceType: AudienceType): Promise<string> => {
+  const generateAudienceResponse = async (query: string, audienceType: AudienceType) => {
     try {
       const response = await fetch('/api/chat', {
         method: 'POST',
@@ -297,17 +279,27 @@ function ChatInterface({ audience, onBack }: { audience: AudienceType; onBack: (
         throw new Error(data.error)
       }
 
-      return data.content || 'I apologize, but I couldn\'t generate a response at the moment. Please try again.'
+      return {
+        content: data.content || 'I apologize, but I couldn\'t generate a response at the moment. Please try again.',
+        sources: data.sources || [],
+      }
     } catch (error) {
       console.error('Error generating response:', error)
       
       // Fallback to simple audience-based responses if API fails
+      let content = "I'm having some technical issues right now. Please try your question again in a moment!"
+      
       if (audienceType === 'policymaker') {
-        return "I'm currently experiencing technical difficulties. As a brief overview for policymakers: The IETF develops critical internet standards through consensus-based processes that impact global digital policy and governance."
+        content = "I'm currently experiencing technical difficulties. As a brief overview for policymakers: The IETF develops critical internet standards through consensus-based processes that impact global digital policy and governance."
       } else if (audienceType === 'technical') {
-        return "API temporarily unavailable. The IETF is the primary standards organization for internet protocols. Key processes include Internet-Drafts, Working Group reviews, and RFC publication through the standards track."
+        content = "API temporarily unavailable. The IETF is the primary standards organization for internet protocols. Key processes include Internet-Drafts, Working Group reviews, and RFC publication through the standards track."
       } else {
-        return "I'm having some technical issues right now. The IETF is the organization that creates the rules for how the internet works. Please try your question again in a moment!"
+        content = "I'm having some technical issues right now. The IETF is the organization that creates the rules for how the internet works. Please try your question again in a moment!"
+      }
+      
+      return {
+        content,
+        sources: [],
       }
     }
   }
@@ -346,25 +338,6 @@ function ChatInterface({ audience, onBack }: { audience: AudienceType; onBack: (
     }
   }
 
-  const closeAllPanels = () => {
-    setShowRFCSearch(false)
-    setShowWGDashboard(false)
-    setShowNotifications(false)
-    setShowSearch(false)
-    setShowChatHistory(false)
-  }
-
-  // Save chat history when messages change
-  useEffect(() => {
-    if (messages.length > 0 && audience) {
-      const chatMessages = messages.map(msg => ({
-        ...msg,
-        audience: audience
-      }))
-      saveChatHistory(chatMessages, audience)
-    }
-  }, [messages, audience, saveChatHistory])
-
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
@@ -392,72 +365,6 @@ function ChatInterface({ audience, onBack }: { audience: AudienceType; onBack: (
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <button
-                onClick={() => {
-                  console.log("Simple RFC Search button clicked")
-                  setShowRFCSearch(!showRFCSearch)
-                  if (!showRFCSearch) closeAllPanels()
-                  setShowWGDashboard(false)
-                  setShowNotifications(false)
-                }}
-                className="px-3 py-2 text-sm bg-secondary text-secondary-foreground hover:bg-secondary/80 rounded transition-all duration-200 hover:scale-110 border border-border"
-              >
-                <Library className="w-4 h-4" />
-              </button>
-              <button
-                onClick={() => {
-                  console.log("Working Group button clicked")
-                  setShowWGDashboard(!showWGDashboard)
-                  if (!showWGDashboard) closeAllPanels()
-                  setShowRFCSearch(false)
-                  setShowNotifications(false)
-                }}
-                className="px-3 py-2 text-sm bg-secondary text-secondary-foreground hover:bg-secondary/80 rounded transition-all duration-200 hover:scale-110 border border-border"
-              >
-                <Network className="w-4 h-4" />
-              </button>
-              <button
-                onClick={() => {
-                  console.log("Notifications button clicked")
-                  setShowNotifications(!showNotifications)
-                  if (!showNotifications) closeAllPanels()
-                  setShowRFCSearch(false)
-                  setShowWGDashboard(false)
-                }}
-                className="px-3 py-2 text-sm bg-secondary text-secondary-foreground hover:bg-secondary/80 rounded transition-all duration-200 hover:scale-110 border border-border relative"
-              >
-                <Bell className="w-4 h-4" />
-                <div className="absolute -top-1 -right-1 w-2 h-2 bg-destructive rounded-full animate-pulse" />
-              </button>
-              <button
-                onClick={() => {
-                  console.log("Search button clicked")
-                  setShowSearch(!showSearch)
-                  if (!showSearch) closeAllPanels()
-                  setShowRFCSearch(false)
-                  setShowWGDashboard(false)
-                  setShowNotifications(false)
-                  setShowChatHistory(false)
-                }}
-                className="px-3 py-2 text-sm bg-secondary text-secondary-foreground hover:bg-secondary/80 rounded transition-all duration-200 hover:scale-110 border border-border"
-              >
-                <Search className="w-4 h-4" />
-              </button>
-              <button
-                onClick={() => {
-                  console.log("Chat History button clicked")
-                  setShowChatHistory(!showChatHistory)
-                  if (!showChatHistory) closeAllPanels()
-                  setShowRFCSearch(false)
-                  setShowWGDashboard(false)
-                  setShowNotifications(false)
-                  setShowSearch(false)
-                }}
-                className="px-3 py-2 text-sm bg-secondary text-secondary-foreground hover:bg-secondary/80 rounded transition-all duration-200 hover:scale-110 border border-border"
-              >
-                <Calendar className="w-4 h-4" />
-              </button>
-              <UserAuthButton />
               <ThemeToggle />
             </div>
           </div>
@@ -484,79 +391,7 @@ function ChatInterface({ audience, onBack }: { audience: AudienceType; onBack: (
         </div>
       </div>
 
-      {/* RFC Search Panel */}
-      {showRFCSearch && (
-        <div className="border-b bg-card/50 backdrop-blur-sm animate-in slide-in-from-top-2 duration-300">
-          <div className="container mx-auto px-4 py-6">
-            <RFCSearch
-              audience={audience!}
-              onRFCSelect={(rfc) => {
-                setInput(`Tell me about RFC ${rfc.number}: ${rfc.title}`)
-                setShowRFCSearch(false)
-              }}
-            />
-          </div>
-        </div>
-      )}
-
-      {/* Working Group Dashboard Panel */}
-      {showWGDashboard && (
-        <div className="border-b bg-card/50 backdrop-blur-sm animate-in slide-in-from-top-2 duration-300">
-          <div className="container mx-auto px-4 py-6">
-            <WorkingGroupDashboard
-              audience={audience!}
-              onWorkingGroupSelect={(wg) => {
-                setInput(`Tell me about the ${wg.acronym} working group and their work on ${wg.hotTopics[0]}`)
-                setShowWGDashboard(false)
-              }}
-            />
-          </div>
-        </div>
-      )}
-
-      {/* Notifications Panel */}
-      {showNotifications && (
-        <div className="border-b bg-card/50 backdrop-blur-sm animate-in slide-in-from-top-2 duration-300">
-          <div className="container mx-auto px-4 py-6">
-            <NotificationsSystem
-              audience={audience!}
-              onNotificationClick={(notification) => {
-                if (notification.metadata?.rfcNumber) {
-                  setInput(`Tell me about RFC ${notification.metadata.rfcNumber}`)
-                } else if (notification.metadata?.workingGroup) {
-                  setInput(`What's new with the ${notification.metadata.workingGroup} working group?`)
-                } else {
-                  setInput(`Tell me more about: ${notification.title}`)
-                }
-                setShowNotifications(false)
-              }}
-            />
-          </div>
-        </div>
-      )}
-
-      {/* Search Panel */}
-      {showSearch && (
-        <SearchPanel
-          onClose={() => setShowSearch(false)}
-          onSearchSelect={(query) => {
-            setInput(query)
-            setShowSearch(false)
-          }}
-        />
-      )}
-
-      {/* Chat History Panel */}
-      {showChatHistory && (
-        <ChatHistoryPanel
-          onClose={() => setShowChatHistory(false)}
-          onChatSelect={(chatId) => {
-            // In a full implementation, you would load the selected chat
-            // For now, we'll just close the panel
-            setShowChatHistory(false)
-          }}
-        />
-      )}
+      {/* All panel components removed */}
 
       {/* Chat Messages */}
       <div className="flex-1 container mx-auto px-4 py-6">
@@ -721,6 +556,35 @@ function MessageBubble({ message, audience }: { message: Message; audience: Audi
                 {message.content}
               </ReactMarkdown>
             </div>
+            
+            {/* Show RFC sources if available */}
+            {message.sources && message.sources.length > 0 && (
+              <div className="mt-3 pt-2 border-t border-border/50">
+                <div className="flex items-center gap-2 mb-2">
+                  <FileText className="w-3 h-3 text-muted-foreground" />
+                  <span className="text-xs font-medium">Sources:</span>
+                </div>
+                <div className="flex flex-wrap gap-2 mb-2">
+                  {message.sources.map((source, index) => (
+                    <Badge 
+                      key={index} 
+                      variant="outline" 
+                      className="text-xs bg-muted/50 hover:bg-muted transition-all duration-200"
+                    >
+                      <a 
+                        href={`https://tools.ietf.org/rfc/rfc${source.rfcNumber}.txt`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-1 hover:text-primary"
+                      >
+                        RFC {source.rfcNumber}
+                        {source.title && <span className="hidden sm:inline">- {source.title.length > 20 ? source.title.substring(0, 20) + '...' : source.title}</span>}
+                      </a>
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <div className="flex items-center justify-between mt-3 pt-2 border-t border-border/50">
               <div className="flex items-center gap-2 text-xs text-muted-foreground">

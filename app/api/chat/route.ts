@@ -1,3 +1,4 @@
+import { createRAGPrompt, searchRFCContent, shouldUseRAG } from '@/lib/rag/retrieval'
 import { NextRequest, NextResponse } from 'next/server'
 
 // Fallback responses for when API is unavailable
@@ -66,7 +67,7 @@ Clears up ambiguities in DNS specifications. Relevant for policymakers as it und
   
   // newcomer
   if (lowerMessage.includes('dns') || lowerMessage.includes('domain name')) {
-    return `# DNS for Beginners 🌐
+    return `# DNS for Beginners
 
 ## What is DNS?
 Think of **DNS (Domain Name System)** as the internet's phone book! When you type **www.google.com**, DNS translates that friendly name into a computer address (like 172.217.164.110) that computers can understand.
@@ -79,7 +80,7 @@ This is like the **instruction manual** that explains how the internet's address
 ### **[RFC 1035](https://tools.ietf.org/rfc/rfc1035.txt) - DNS Technical Details**
 This document has all the **technical specifications** - think of it as the detailed blueprint that engineers use to build DNS systems.
 
-## Why Should You Care? 🤔
+## Why Should You Care?
 - **Every website visit** uses DNS
 - **Email delivery** depends on DNS
 - **Security features** protect against fake websites
@@ -97,6 +98,7 @@ DNS is what makes the internet user-friendly - without it, you'd have to remembe
 export async function POST(request: NextRequest) {
   try {
     const { messages, audience } = await request.json()
+    const userMessage = messages[messages.length - 1]?.content || ''
 
     if (!process.env.OPENROUTER_API_KEY) {
       return NextResponse.json(
@@ -105,8 +107,44 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Create a system prompt based on the audience type
-    const getSystemPrompt = (audienceType: string) => {
+    let systemMessage: { role: string, content: string }
+    let retrievedSources = null
+
+    // Check if we should use RAG for this query
+    if (shouldUseRAG(userMessage)) {
+      console.log('Using RAG for query:', userMessage)
+      
+      // Search for relevant RFC content
+      const retrievalResults = await searchRFCContent(userMessage, 5)
+      
+      if (retrievalResults) {
+        // Create RAG-enhanced prompt with retrieved context
+        const enhancedPrompt = createRAGPrompt(audience, retrievalResults)
+        systemMessage = {
+          role: 'system',
+          content: enhancedPrompt
+        }
+        
+        // Store sources for client display
+        retrievedSources = retrievalResults.sources.map(source => ({
+          rfcNumber: source.rfcNumber,
+          title: source.title || `RFC ${source.rfcNumber}`,
+        }))
+        
+        console.log(`Retrieved ${retrievalResults.sources.length} relevant sources for query`)
+      } else {
+        // Fall back to standard prompt if no relevant content found
+        systemMessage = createStandardSystemMessage(audience)
+        console.log('No relevant RFC content found, using standard prompt')
+      }
+    } else {
+      // Use standard prompt for non-RFC related queries
+      systemMessage = createStandardSystemMessage(audience)
+      console.log('Using standard prompt for query')
+    }
+
+    // Standard system message creation function
+    function createStandardSystemMessage(audienceType: string) {
       const basePrompt = `You are an expert IETF (Internet Engineering Task Force) assistant. You help users understand internet standards, RFCs, working groups, and IETF processes.
 
 IMPORTANT FORMATTING RULES:
@@ -114,11 +152,14 @@ IMPORTANT FORMATTING RULES:
 - Create hyperlinks for RFCs using format: **[RFC XXXX](https://tools.ietf.org/rfc/rfcXXXX.txt)**
 - Use markdown headers (##, ###) to structure longer responses
 - Use bullet points for lists
-- Include relevant emoji sparingly for newcomer audience`
+- Always provide complete, comprehensive responses
+- Ensure your response fully addresses the user's question`
       
       switch (audienceType) {
         case 'policymaker':
-          return `${basePrompt} You're speaking to a policymaker. Focus on:
+          return {
+            role: 'system',
+            content: `${basePrompt} You're speaking to a policymaker. Focus on:
 - **Policy implications and governance aspects**
 - High-level summaries in **plain language**
 - **Regulatory and compliance impacts**
@@ -126,34 +167,39 @@ IMPORTANT FORMATTING RULES:
 - Always link to relevant RFCs using proper hyperlink format
 - Use **bold text** for key policy terms
 - Avoid deep technical details unless specifically asked`
+          }
           
         case 'technical':
-          return `${basePrompt} You're speaking to a technical professional. Provide:
+          return {
+            role: 'system',
+            content: `${basePrompt} You're speaking to a technical professional. Provide:
 - Detailed technical information with **bold key terms**
 - Specific RFC references with **hyperlinks**: [RFC XXXX](https://tools.ietf.org/rfc/rfcXXXX.txt)
 - Implementation details and code examples when relevant
 - **Working group** technical discussions
 - **Standards track** information and obsoletes/updates relationships
 - Use structured markdown formatting for complex information`
+          }
           
         case 'newcomer':
-          return `${basePrompt} You're speaking to someone new to IETF. Provide:
+          return {
+            role: 'system',
+            content: `${basePrompt} You're speaking to someone new to IETF. Provide:
 - Simple explanations with **analogies**
 - Basic concepts with **bold definitions**
 - Step-by-step guidance using **numbered lists**
 - Learning paths and next steps
 - Link to relevant RFCs with brief explanations
-- Use friendly formatting with occasional emoji 🌐 📚
+- Use friendly formatting
 - Avoid jargon or **explain it clearly in bold**`
+          }
           
         default:
-          return basePrompt
+          return {
+            role: 'system',
+            content: basePrompt
+          }
       }
-    }
-
-    const systemMessage = {
-      role: 'system',
-      content: getSystemPrompt(audience)
     }
 
     const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
@@ -167,8 +213,10 @@ IMPORTANT FORMATTING RULES:
         model: 'microsoft/wizardlm-2-8x22b',
         messages: [systemMessage, ...messages],
         temperature: 0.7,
-        max_tokens: 500,
+        max_tokens: 2000,
+        stream: false,
       }),
+      signal: AbortSignal.timeout(60000), // 60 second timeout
     })
 
     if (!response.ok) {
@@ -180,29 +228,90 @@ IMPORTANT FORMATTING RULES:
       return NextResponse.json({
         content: fallbackResponse,
         usage: { total_tokens: 0 },
+        sources: retrievedSources,
         fallback: true
       })
     }
 
-    const data = await response.json()
+    let data
+    try {
+      data = await response.json()
+    } catch (jsonError) {
+      console.error('Failed to parse JSON response:', jsonError)
+      const fallbackResponse = getFallbackResponse(audience, messages[messages.length - 1]?.content)
+      return NextResponse.json({
+        content: fallbackResponse,
+        usage: { total_tokens: 0 },
+        sources: retrievedSources,
+        fallback: true
+      })
+    }
     
     if (!data.choices || !data.choices[0] || !data.choices[0].message) {
-      return NextResponse.json(
-        { error: 'Invalid response format from AI service' },
-        { status: 500 }
-      )
+      console.error('Invalid response format from AI service:', data)
+      const fallbackResponse = getFallbackResponse(audience, messages[messages.length - 1]?.content)
+      return NextResponse.json({
+        content: fallbackResponse,
+        usage: { total_tokens: 0 },
+        sources: retrievedSources,
+        fallback: true
+      })
+    }
+
+    const responseContent = data.choices[0].message.content
+    
+    // Validate that we have a meaningful response
+    if (!responseContent || responseContent.trim().length < 10) {
+      console.error('Response too short or empty:', responseContent)
+      const fallbackResponse = getFallbackResponse(audience, messages[messages.length - 1]?.content)
+      return NextResponse.json({
+        content: fallbackResponse,
+        usage: { total_tokens: 0 },
+        sources: retrievedSources,
+        fallback: true
+      })
     }
 
     return NextResponse.json({
-      content: data.choices[0].message.content,
-      usage: data.usage
+      content: responseContent,
+      usage: data.usage,
+      sources: retrievedSources
     })
 
   } catch (error) {
     console.error('Chat API error:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
+    
+    // Provide appropriate fallback based on error type
+    let errorMessage = 'Internal server error'
+    if (error instanceof Error) {
+      if (error.name === 'AbortError') {
+        errorMessage = 'Request timeout - response was taking too long'
+      } else if (error.message?.includes('fetch')) {
+        errorMessage = 'Network error - unable to reach AI service'
+      }
+    }
+    
+    console.log('Using fallback response due to error:', errorMessage)
+    
+    // Get audience and messages from the request
+    let requestData
+    try {
+      requestData = await request.json()
+    } catch {
+      requestData = { audience: 'newcomer', messages: [] }
+    }
+    
+    const fallbackResponse = getFallbackResponse(
+      requestData.audience || 'newcomer', 
+      requestData.messages?.[requestData.messages.length - 1]?.content || ''
     )
+    
+    return NextResponse.json({
+      content: fallbackResponse,
+      usage: { total_tokens: 0 },
+      sources: null,
+      fallback: true,
+      error: errorMessage
+    })
   }
 }

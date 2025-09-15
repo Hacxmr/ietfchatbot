@@ -9,9 +9,9 @@ export function AuthDebugInfo() {
   
   return (
     <div className="p-4 bg-green-100 rounded mt-4">
-      <h3 className="font-bold">🔍 Auth Debug Info:</h3>
+      <h3 className="font-bold">Auth Debug Info:</h3>
       <p>✅ Clerk is loaded successfully</p>
-      <p>🔐 Authenticated: {isAuthenticated ? "Yes" : "No"}</p>
+      <p>Authenticated: {isAuthenticated ? "Yes" : "No"}</p>
       {isAuthenticated && user && (
         <div>
           <p>👤 User ID: {user.id}</p>

@@ -1,22 +1,22 @@
 "use client"
 
-import { useState } from "react"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Switch } from "@/components/ui/switch"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { ScrollArea } from "@/components/ui/scroll-area"
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
 } from "@/components/ui/dialog"
-import { Bell, Calendar, FileText, Users, Settings, Mail, Smartphone, Clock, TrendingUp, Star } from "lucide-react"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Switch } from "@/components/ui/switch"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Bell, Calendar, Clock, FileText, Mail, Settings, Smartphone, Star, TrendingUp, Users } from "lucide-react"
+import { useState } from "react"
 
 interface NotificationPreference {
   id: string
@@ -232,33 +232,33 @@ export function NotificationsSystem({ audience, onNotificationClick }: Notificat
       return {
         title: "Policy-Focused Weekly Digest",
         content: [
-          "🏛️ **Governance Updates**: New privacy guidelines from PEARG affecting data protection regulations",
-          "📋 **Policy-Relevant RFCs**: RFC 9110 HTTP Semantics - impacts web privacy and consent mechanisms",
+          "**Governance Updates**: New privacy guidelines from PEARG affecting data protection regulations",
+          "**Policy-Relevant RFCs**: RFC 9110 HTTP Semantics - impacts web privacy and consent mechanisms",
           "🤝 **Standards Coordination**: IETF-W3C liaison on web security standards alignment",
-          "📊 **Regulatory Impact**: 3 new standards with potential compliance implications this week",
-          "🔍 **Upcoming Decisions**: TLS post-quantum crypto adoption timeline affects cybersecurity policy",
+          "**Regulatory Impact**: 3 new standards with potential compliance implications this week",
+          "**Upcoming Decisions**: TLS post-quantum crypto adoption timeline affects cybersecurity policy",
         ],
       }
     } else if (audience === "technical") {
       return {
         title: "Technical Weekly Digest",
         content: [
-          "🔧 **New RFCs**: RFC 9110 (HTTP Semantics) - breaking changes from RFC 2616",
-          "📝 **Active Drafts**: 12 drafts updated across Security and Internet areas",
-          "👥 **Working Groups**: TLS interim on post-quantum crypto, OAuth 2.1 security review",
-          "🚀 **Implementation Updates**: HTTP/3 prioritization spec nearing completion",
-          "🔒 **Security Focus**: New DNSSEC automation proposals in DNSOP",
+          "**New RFCs**: RFC 9110 (HTTP Semantics) - breaking changes from RFC 2616",
+          "**Active Drafts**: 12 drafts updated across Security and Internet areas",
+          "**Working Groups**: TLS interim on post-quantum crypto, OAuth 2.1 security review",
+          "**Implementation Updates**: HTTP/3 prioritization spec nearing completion",
+          "**Security Focus**: New DNSSEC automation proposals in DNSOP",
         ],
       }
     } else {
       return {
         title: "Newcomer-Friendly Weekly Digest",
         content: [
-          "📚 **Learning Highlights**: New beginner guide to HTTP protocols published",
-          "🌟 **Key Concepts**: This week's focus - understanding how web security works",
+          "**Learning Highlights**: New beginner guide to HTTP protocols published",
+          "**Key Concepts**: This week's focus - understanding how web security works",
           "👋 **Community**: 5 new working groups accepting newcomer participation",
-          "🎯 **Getting Started**: Recommended reading path for DNS and web protocols",
-          "💡 **Did You Know?**: RFCs are living documents that evolve with technology needs",
+          "**Getting Started**: Recommended reading path for DNS and web protocols",
+          "**Did You Know?**: RFCs are living documents that evolve with technology needs",
         ],
       }
     }
