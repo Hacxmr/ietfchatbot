@@ -10,9 +10,26 @@ An intelligent chatbot designed to help users understand Internet Engineering Ta
 ## Features
 
 ### **Audience-Specific Responses**
-- **Policymakers**: High-level summaries, regulatory implications, governance aspects
-- **Technical Professionals**: Detailed specifications, implementation details, working group discussions
-- **Newcomers**: Simple explanations, analogies, step-by-step guidance
+- **Policymakers**:
+  - Strategic overviews and policy implications
+  - Governance and compliance considerations
+  - Risk assessments and regulatory impact
+  - Cross-protocol interaction analysis
+  - Global standardization perspectives
+
+- **Technical Professionals**:
+  - Detailed protocol specifications
+  - Implementation guidelines and best practices
+  - Performance characteristics and optimizations
+  - Security considerations and threat models
+  - Protocol interaction and compatibility details
+
+- **Newcomers**:
+  - Simplified conceptual explanations
+  - Real-world analogies and examples
+  - Visual and comparative learning aids
+  - Progressive complexity introduction
+  - Foundational concept building blocks
 
 ### **Comprehensive RFC Knowledge Base**
 - **~150 RFCs** covering all major internet protocol areas
@@ -218,19 +235,96 @@ ietfchatbot/
 
 **Query**: "What are the privacy implications of DNS over HTTPS?"
 
-**Response**: High-level explanation of DoH policy impacts, regulatory considerations, and governance challenges with relevant RFC citations.
+**Response**: 
+"From a policy perspective, DNS over HTTPS (DoH) introduces several critical considerations:
+
+1. Privacy Enhancement:
+   - Prevents ISP-level DNS monitoring
+   - Protects user browsing patterns from network observers
+   - Reduces potential for geographic tracking
+
+2. Regulatory Impact:
+   - May affect lawful intercept capabilities
+   - Influences data protection compliance (GDPR, CCPA)
+   - Requires updates to organizational security policies
+
+3. Governance Implications:
+   - Shifts control from network operators to DNS providers
+   - Creates need for new oversight frameworks
+   - Impacts national cybersecurity strategies
+
+Key RFC References: 8484 (DoH Protocol), 8404 (Privacy Considerations)"
 
 ### **For Technical Professionals**
 
 **Query**: "How does HTTP/3 handle connection migration?"
 
-**Response**: Detailed technical explanation with QUIC specifications, implementation details, and working group discussions.
+**Response**:
+"HTTP/3 connection migration is implemented through QUIC's Connection ID mechanism:
+
+```
+ConnectionId Structure:
+[8-byte identifier][16-byte auth tag]
+
+Migration Process:
+1. Client generates new Connection ID
+2. Server validates using stateless reset token
+3. Path validation occurs:
+   - PATH_CHALLENGE frames
+   - PATH_RESPONSE verification
+   - RTT measurements
+```
+
+Implementation considerations:
+- Maintain separate packet number spaces
+- Handle 0-RTT state restoration
+- Implement address validation
+- Consider NAT rebinding scenarios
+
+Performance impact:
+- ~100ms typical migration time
+- 0.1% packet loss during transition
+- Concurrent path testing supported
+
+See RFC 9000 (QUIC) Section 9, RFC 9114 (HTTP/3) Section 6.3 for detailed specifications."
 
 ### **For Newcomers**
 
 **Query**: "What is TCP and why is it important?"
 
-**Response**: Simple explanation with analogies, basic concepts in bold, and step-by-step guidance to understand transport protocols.
+**Response**:
+"Think of TCP (Transmission Control Protocol) as a reliable postal service for the internet! 📬
+
+Imagine you're sending a package to a friend:
+
+1. 📦 Breaking It Down
+   - TCP breaks your data into small packages (called 'packets')
+   - Just like splitting a large box into smaller boxes that are easier to handle
+
+2. ✅ Delivery Confirmation
+   - TCP makes sure every packet arrives safely
+   - Like tracking numbers for each package
+   - If any package is lost, it gets sent again!
+
+3. 📋 Keeping Order
+   - TCP puts everything back in the right order
+   - Even if some packets arrive faster than others
+   - Like numbering pages in a book so they can be arranged correctly
+
+Real-World Example:
+When you watch a YouTube video, TCP ensures:
+- No parts of the video are missing
+- The video plays in the correct order
+- Everything arrives without errors
+
+That's why TCP is called 'reliable' - it's like having a super-dependable delivery person for your internet data!
+
+Want to learn more? Let me know what interests you about how the internet works! 😊"
+
+Each response style is unique:
+- Policymakers get strategic views and regulatory context
+- Technical users receive detailed specifications and implementation data
+- Newcomers see friendly explanations with relatable analogies
 
 ## Development
 
